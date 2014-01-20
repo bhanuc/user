@@ -14,7 +14,8 @@ type FlashMessage struct {
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-
+	data := make(map[string]interface{})
+	e := make(map[string]FlashMessage)
 	tu := struct {
 		Name     string `json:"name"`
 		Lastname string `json:"lastname"`
@@ -28,32 +29,24 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	tu.Email = strings.Trim(tu.Email, " ")
 	tu.Email2 = strings.Trim(tu.Email2, " ")
 
-	e := make(map[string]FlashMessage)
-
 	if tu.Name == "" {
 		e["name"] = FlashMessage{"danger", "Please fill out your name"}
 	}
-
 	if tu.Lastname == "" {
 		e["lastname"] = FlashMessage{"danger", "Please fill out your last name"}
 	}
-
 	if tu.Email == "" {
 		e["email"] = FlashMessage{"danger", "Please enter a valid email-address"}
 	}
-
 	if tu.Email != tu.Email2 {
 		e["email2"] = FlashMessage{"danger", "The two email addresses don't match"}
 	}
-
 	//userrepo.Collection.Find(bson.M{"email": tu.Email}).One(&foundmail)
-	c, _ := UserR.Collection.Find(bson.M{"email": tu.Email}).Count()
+	c, _ := R.Collection.Find(bson.M{"email": tu.Email}).Count()
 
 	if c > 0 {
 		e["general"] = FlashMessage{"danger", "The user with this email address already exists. If you pressed the [Sign up] button multiple times please check your mailbox " + tu.Email + "."}
 	}
-
-	data := make(map[string]interface{})
 
 	if len(e) == 0 {
 		user := new(User)
@@ -86,7 +79,7 @@ func AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 	utility.ReadJson(r, &tc)
 
 	tc.Email = strings.Trim(tc.Email, " ")
-	user, err := UserR.FindOneByEmail(tc.Email)
+	user, err := R.FindOneByEmail(tc.Email)
 	// if user not found
 	if err != nil {
 		valid = false
@@ -147,7 +140,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	flashes := make(map[string]FlashMessage)
 	id, ok := session.Values["user"].(string)
 	if ok {
-		u, _ := UserR.FindOneByIdHex(id)
+		u, _ := R.FindOneByIdHex(id)
 		data["profile"] = u.UserProfile
 	} else {
 		flashes["no_session"] = FlashMessage{"danger", "You are not logged in"}
@@ -163,7 +156,7 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 	flashes := make(map[string]FlashMessage)
 	id, ok := session.Values["user"].(string)
 	if ok {
-		u, err := UserR.FindOneByIdHex(id)
+		u, err := R.FindOneByIdHex(id)
 		if err != nil {
 			flashes["no_session"] = FlashMessage{"danger", "You are not logged in"}
 			data["flashes"] = flashes
@@ -189,7 +182,7 @@ func ResetRequestHandler(w http.ResponseWriter, r *http.Request) {
 	}{}
 	utility.ReadJson(r, &tc)
 	tc.Email = strings.Trim(tc.Email, " ")
-	user, err := UserR.FindOneByEmail(tc.Email)
+	user, err := R.FindOneByEmail(tc.Email)
 	if err != nil {
 		flashes["user_not_found"] = FlashMessage{"danger", "This user does not exist"}
 	} else {
@@ -209,7 +202,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	utility.ReadJson(r, &tc)
 	tc.Token = strings.Trim(tc.Token, " ")
 	if tc.Token != "" {
-		user, err := UserR.FindOneByResetToken(tc.Token)
+		user, err := R.FindOneByResetToken(tc.Token)
 		if err != nil {
 			flashes["user_not_found"] = FlashMessage{"danger", "Invalid token"}
 		} else {
@@ -225,12 +218,12 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LoginStatusHandler(w http.ResponseWriter, r *http.Request) {
+func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := sessionStore.Get(r, "p")
 	data := make(map[string]interface{})
 	id, ok := session.Values["user"].(string)
 	if ok {
-		u, err := UserR.FindOneByIdHex(id)
+		u, err := R.FindOneByIdHex(id)
 		if err != nil {
 		} else {
 			data["name"] = u.UserProfile.Name

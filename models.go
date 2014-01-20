@@ -107,14 +107,16 @@ func (r UserRepository) Delete(id string) (err error) {
 }
 
 func (u *User) Update() {
-	if err := UserR.Update(u); err != nil {
+	if err := R.Update(u); err != nil {
 		panic(err)
 	}
 }
 
 func (u *User) Add(name, surname, email string) {
 	password := uniuri.New()
-	fmt.Printf("New User: %s, %s\n", email, password)
+	if Devmode {
+		fmt.Printf("New User: %s, %s\n", email, password)
+	}
 	b := []byte(password)
 	b, _ = bcrypt.GenerateFromPassword(b, 12)
 
@@ -125,7 +127,7 @@ func (u *User) Add(name, surname, email string) {
 	u.Email = email
 	u.Password = strings.Trim(string(b[:]), "\x00")
 	u.UserProfile = p
-	if err := UserR.Create(u); err != nil {
+	if err := R.Create(u); err != nil {
 		panic(err)
 	}
 	body := "Hello " + name + " " + surname + ",\n\n"
@@ -203,7 +205,7 @@ func (u *User) CreateResetToken() {
 	body += "Please click the following link to generate a new password\n"
 	body += "http://" + Config.Host + "/#/user/reset_password?token=" + u.ResetToken + "\n\n"
 	body += "Regards,\n\n"
-	body += Config.Host + "team"
+	body += Config.Host + " team"
 
 	m := mail.NewMail(Config.MailFrom, []string{u.Email}, "Password Reset", body)
 	if err := m.Send(); err != nil {
@@ -224,7 +226,7 @@ func (u *User) ResetPassword() bool {
 	body += "Please use the following password to log into your account:\n"
 	body += password + "\n\n"
 	body += "Regards,\n\n"
-	body += Config.Host + "team"
+	body += Config.Host + " team"
 
 	if time.Since(u.ResetSent) >= time.Hour*24 {
 		u.ResetToken = ""
@@ -233,7 +235,9 @@ func (u *User) ResetPassword() bool {
 		return false
 	} else {
 		u.Password = strings.Trim(string(b[:]), "\x00")
-		fmt.Printf("User Password Changed: %s, %s\n", u.Email, password)
+		if Devmode {
+			fmt.Printf("User Password Changed: %s, %s\n", u.Email, password)
+		}
 		u.ResetToken = ""
 		u.ResetSent = time.Time{}
 		m := mail.NewMail(Config.MailFrom, []string{u.Email}, "Your new password for "+Config.Host, body)

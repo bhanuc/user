@@ -8,9 +8,10 @@ import (
 
 var (
 	Config       *Conf
+	Devmode      bool        = false
 	Router       *mux.Router = mux.NewRouter()
-	UserDB       *mgo.Database
-	UserR        *UserRepository = new(UserRepository)
+	DB           *mgo.Database
+	R            *UserRepository = new(UserRepository)
 	mgoSession   *mgo.Session
 	sessionStore *sessions.CookieStore
 )
@@ -31,14 +32,14 @@ func New(ms *mgo.Session, ss *sessions.CookieStore, host, mailfrom, dbname, dbco
 		DBName:       dbname,
 		DBCollection: dbcollection,
 	}
-	UserDB = mgoSession.DB(Config.DBName)
-	UserR.Collection = UserDB.C(Config.DBCollection)
+	DB = mgoSession.DB(Config.DBName)
+	R.Collection = DB.C(Config.DBCollection)
 	Router.HandleFunc("/user/register", RegisterHandler).Methods("POST")
 	Router.HandleFunc("/user/authenticate", AuthenticateHandler).Methods("POST")
 	Router.HandleFunc("/user/endsession", LogoutHandler).Methods("POST")
 	Router.HandleFunc("/user/profile", ProfileHandler).Methods("GET")
 	Router.HandleFunc("/user/profile", UpdateProfileHandler).Methods("POST")
-	Router.HandleFunc("/user/reset_request", ResetRequestHandler).Methods("POST")
-	Router.HandleFunc("/user/reset_password", ResetPasswordHandler).Methods("POST")
-	Router.HandleFunc("/user/loginstatus", LoginStatusHandler).Methods("GET")
+	Router.HandleFunc("/user/resetrequest", ResetRequestHandler).Methods("POST")
+	Router.HandleFunc("/user/resetpassword", ResetPasswordHandler).Methods("POST")
+	Router.HandleFunc("/user/status", StatusHandler).Methods("GET")
 }
