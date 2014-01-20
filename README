@@ -1,0 +1,38 @@
+### Status: Not Working
+
+package main
+
+import (
+	"github.com/gomango/user"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
+	"labix.org/v2/mgo"
+	"net/http"
+)
+
+var (
+	router          *mux.Router
+	mgoSession      *mgo.Session
+	sessionStore    *sessions.CookieStore
+	sessionAuthKey  []byte = make([]byte, 64)
+	sessionCryptKey []byte = make([]byte, 32)
+)
+
+func main() {
+	var err error
+	mgoSession, err = mgo.Dial("localhost")
+	if err != nil {
+		panic(err)
+	}
+	sessionAuthKey = securecookie.GenerateRandomKey(64)
+	sessionCryptKey = securecookie.GenerateRandomKey(32)
+	sessionStore = sessions.NewCookieStore(sessionAuthKey, sessionCryptKey)
+	sessionStore.Options = &sessions.Options{
+		Path:   "/",
+		MaxAge: 0,
+	}
+	user.New(mgoSession, sessionStore, "example.com", "web@example.com", "exampledb", "users")
+	router.Handle("/api", user.Router)
+	http.ListenAndServe(":8080", router)
+}
