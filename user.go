@@ -8,7 +8,7 @@ import (
 
 var (
 	Config       *Conf
-	Router       *mux.Router
+	Router       *mux.Router = mux.NewRouter()
 	UserDB       *mgo.Database
 	UserR        *UserRepository = new(UserRepository)
 	mgoSession   *mgo.Session
