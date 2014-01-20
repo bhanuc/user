@@ -1,5 +1,3 @@
-### Status: Not Working
-
 package main
 
 import (
@@ -12,7 +10,7 @@ import (
 )
 
 var (
-	router          *mux.Router
+	router          *mux.Router = mux.NewRouter()
 	mgoSession      *mgo.Session
 	sessionStore    *sessions.CookieStore
 	sessionAuthKey  []byte = make([]byte, 64)
@@ -33,6 +31,6 @@ func main() {
 		MaxAge: 0,
 	}
 	user.New(mgoSession, sessionStore, "example.com", "web@example.com", "exampledb", "users")
-	router.Handle("/api", user.Router)
+	router.PathPrefix("/api").Handler(http.StripPrefix("/api", user.Router))
 	http.ListenAndServe(":8080", router)
 }
